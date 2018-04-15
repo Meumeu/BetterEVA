@@ -12,7 +12,6 @@ namespace BetterEVA
     public class EVACamera
     {
         FlightCamera flightCamera;
-        GameObject cameraParent;
         Vessel vessel;
         
         public float minDistance = 0.1f;
@@ -27,7 +26,6 @@ namespace BetterEVA
         public EVACamera(Vessel v)
         {
             flightCamera = FlightCamera.fetch;
-            cameraParent = new GameObject("CameraParent");
             vessel = v;
         }
 
