@@ -21,6 +21,7 @@ namespace BetterEVA
 
         EVACamera camera;
         KerbalEVA eva;
+        static KSP.UI.Screens.Flight.NavBall navball;
 
         static readonly FieldInfo eva_tgtFwd = typeof(KerbalEVA).GetField("tgtFwd", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         static readonly FieldInfo eva_tgtUp = typeof(KerbalEVA).GetField("tgtUp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -42,15 +43,14 @@ namespace BetterEVA
 
         public void OnDestroy()
         {
-            camera.CameraActive = false;
+            if (camera != null)
+                camera.CameraActive = false;
         }
 
         public void OnVesselSwitching(Vessel from, Vessel to)
         {
             if (vessel == from)
-            {
                 camera.CameraActive = false;
-            }
         }
         
         void Update()
@@ -100,9 +100,7 @@ namespace BetterEVA
         void FixedUpdate()
         {
             if (eva == null)
-            {
                 eva = part.FindModuleImplementing<KerbalEVA>();
-            }
 
             switch (mode)
             {
@@ -113,7 +111,7 @@ namespace BetterEVA
                     Vector3 tgtFwd = camera.target_quaternion * Vector3.forward;
                     Vector3 tgtUp = camera.target_quaternion * Vector3.up;
 
-                    GameSettings.EVA_ROTATE_ON_MOVE = false;
+                    GameSettings.EVA_ROTATE_ON_MOVE = false; // make sure the RCS don't fuck up the tgtFwd and tgtUp we're setting
                     eva_tgtFwd.SetValue(eva, tgtFwd);
                     eva_tgtUp.SetValue(eva, tgtUp);
                     break;
@@ -123,29 +121,43 @@ namespace BetterEVA
         int counter = 0;
         void LateUpdate()
         {
-            if (vessel.isActiveVessel)
+            if (vessel.isActiveVessel && counter < 2) // hack
             {
-                System.Diagnostics.Debug.Assert(FlightGlobals.ActiveVessel.isEVA, "FlightGlobals.ActiveVessel.isEVA");
-
-                if (counter < 2) // hack
+                counter++;
+                camera.CameraActive = false;
+            }
+            else if (vessel.isActiveVessel && FirstPerson)
+            {
+                camera.CameraActive = true;
+                switch (mode)
                 {
-                    counter++;
-                    camera.CameraActive = false;
-                }
-                else
-                {
-                    camera.CameraActive = FirstPerson;
-                    switch (mode)
-                    {
-                        case CameraMode.GROUND:
-                            camera.UpdateCameraGround();
-                            break;
+                    case CameraMode.GROUND:
+                        camera.UpdateCameraGround();
+                        break;
 
-                        case CameraMode.SPACE:
-                            camera.UpdateCameraSpace();
-                            break;
-                    }
+                    case CameraMode.SPACE:
+                        camera.UpdateCameraSpace();
+                        break;
                 }
+
+                if (navball == null)
+                    navball = FindObjectOfType<KSP.UI.Screens.Flight.NavBall>();
+
+                System.Diagnostics.Debug.Assert(navball != null, "navball != null");
+
+                CelestialBody mainBody = FlightGlobals.currentMainBody;
+
+                if (mainBody == null || navball == null || navball.navBall == null) // apparently this can happen during vessel switching
+                    return;
+
+                Vector3 position = vessel.transform.position;
+
+                navball.navBall.rotation = Quaternion.Inverse(camera.target_quaternion) * Quaternion.LookRotation(
+                    Vector3.ProjectOnPlane(
+                        mainBody.position + (mainBody.transform.up * (float)mainBody.Radius) - position,
+                        (position - mainBody.position).normalized
+                        ).normalized,
+                    (position - mainBody.position).normalized);
             }
             else
             {
