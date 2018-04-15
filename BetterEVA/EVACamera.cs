@@ -49,6 +49,7 @@ namespace BetterEVA
                 {
                     flightCamera.SetTargetNone();
                     flightCamera.DeactivateUpdate();
+                    target_quaternion = flightCamera.transform.rotation;
                 }
 
                 _cameraActive = value;
@@ -83,6 +84,15 @@ namespace BetterEVA
 
         void UpdateCamera()
         {
+            if (flightCamera.updateActive)
+            {
+                // The FlightCamera is reactivated by the VesselSwitching class when the user
+                // tries to switch vessels even if there is no other vessel to switch to. Make
+                // sure the FlightCamera stays deactivated.
+                flightCamera.SetTargetNone();
+                flightCamera.DeactivateUpdate();
+            }
+
             Transform tr = flightCamera.transform;
             
             Vector3 origin = vessel.transform.TransformPoint(local_origin);
@@ -98,8 +108,6 @@ namespace BetterEVA
             }
 
             tr.SetPositionAndRotation(origin + distance * direction, target_quaternion);
-
-            
         }
     }
 }

@@ -6,18 +6,25 @@ using System.Reflection;
 // TODO: limit camera rotation speed in space
 // TODO: control yaw with mouse on ground
 // TODO: update the navball
+// TODO: command to face the target
+// TODO: command to cancel relative velocity
 
 namespace BetterEVA
 {
     public class BetterKerbalEVA : PartModule
     {
+        public enum CameraMode
+        {
+            GROUND,
+            SPACE
+        }
+
         EVACamera camera;
         KerbalEVA eva;
 
         static readonly FieldInfo eva_tgtFwd = typeof(KerbalEVA).GetField("tgtFwd", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         static readonly FieldInfo eva_tgtUp = typeof(KerbalEVA).GetField("tgtUp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-
+        
         const float MinPitch = -1.0f;
         const float MaxPitch = 1.5f;
 
@@ -25,25 +32,27 @@ namespace BetterEVA
         [KSPField(guiName = "First person camera", guiActive = true, isPersistant = true), UI_Toggle(disabledText = "Disabled", enabledText = "Enabled")]
         public bool FirstPerson = false;
 
+        CameraMode mode = CameraMode.GROUND;
+
         public override void OnStart(StartState state)
         {
             camera = new EVACamera(vessel);
+            GameEvents.onVesselSwitching.Add(this.OnVesselSwitching);
         }
 
         public void OnDestroy()
         {
-            FirstPerson = false;
             camera.CameraActive = false;
         }
 
-        public enum CameraMode
+        public void OnVesselSwitching(Vessel from, Vessel to)
         {
-            GROUND,
-            SPACE
+            if (vessel == from)
+            {
+                camera.CameraActive = false;
+            }
         }
-
-        CameraMode mode = CameraMode.GROUND;
-
+        
         void Update()
         {
             if (vessel.isActiveVessel)
