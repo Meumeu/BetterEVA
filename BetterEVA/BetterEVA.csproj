@@ -50,7 +50,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BetterEVA.cs" />
+    <Compile Include="BetterKerbalEVA.cs" />
     <Compile Include="EVACamera.cs" />
     <Compile Include="GUIUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

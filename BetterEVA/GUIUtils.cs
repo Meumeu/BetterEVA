@@ -62,5 +62,47 @@ namespace BetterEVA
                 GUILayout.EndVertical();
             }
         }
+
+        public class InputFloat
+        {
+            public string prompt;
+
+            float num_value;
+            string text_value;
+
+            public float Value
+            {
+                get
+                {
+                    return num_value;
+                }
+                set
+                {
+                    num_value = value;
+                    text_value = string.Format("{0:F6}", num_value);
+                }
+            }
+
+
+            public InputFloat(string prompt, float value)
+            {
+                this.prompt = prompt;
+                Value = value;
+            }
+            public void Draw()
+            {
+                
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(prompt, GUILayout.MinWidth(50), GUILayout.MaxWidth(50));
+                text_value = GUILayout.TextField(text_value);
+                GUILayout.EndHorizontal();
+
+                if (float.TryParse(text_value, out float tmp))
+                {
+                    num_value = tmp;
+                }
+                    
+            }
+        }
     }
 }
