@@ -2,10 +2,8 @@
 using System.Collections;
 using System.Reflection;
 
-// TODO: Reset camera when switching vessels
 // TODO: limit camera rotation speed in space
 // TODO: control yaw with mouse on ground
-// TODO: update the navball
 // TODO: command to face the target
 // TODO: command to cancel relative velocity
 
