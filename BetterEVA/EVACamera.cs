@@ -80,6 +80,16 @@ namespace BetterEVA
             UpdateCamera();
         }
 
+        public void UpdateCameraLadder()
+        {
+            if (!CameraActive)
+                return;
+
+            target_quaternion = vessel.transform.rotation;
+
+            UpdateCamera();
+        }
+
         void UpdateCamera()
         {
             if (flightCamera.updateActive)

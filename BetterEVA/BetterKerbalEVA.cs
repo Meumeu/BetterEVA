@@ -13,11 +13,12 @@ namespace BetterEVA
         public enum CameraMode
         {
             GROUND,
-            SPACE
+            SPACE,
+            LADDER
         }
 
         EVACamera camera;
-        KerbalEVA eva;
+        KerbalEVA _eva;
         static KSP.UI.Screens.Flight.NavBall navball;
 
         static readonly FieldInfo eva_tgtFwd = typeof(KerbalEVA).GetField("tgtFwd", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -37,6 +38,22 @@ namespace BetterEVA
         public bool FirstPerson = false;
 
         CameraMode mode = CameraMode.GROUND;
+
+        KerbalEVA eva
+        {
+            get
+            {
+                if (_eva == null)
+                {
+                    _eva = part.FindModuleImplementing<KerbalEVA>();
+
+                    // add the callback before the others to have a chance to modify the packTgtRPos member
+                    _eva.st_idle_fl.OnFixedUpdate = this.TranslationControl + _eva.st_idle_fl.OnFixedUpdate;
+                    _eva.st_idle_gr.OnFixedUpdate = this.TranslationControl + _eva.st_idle_gr.OnFixedUpdate;
+                }
+                return _eva;
+            }
+        }
 
         public override void OnStart(StartState state)
         {
@@ -75,27 +92,32 @@ namespace BetterEVA
                     deltaYaw = 0.1f * Input.GetAxis("Mouse X");
                 }
 
-                switch(vessel.situation)
+                if (eva.OnALadder)
+                    mode = CameraMode.LADDER;
+                else
                 {
-                    case Vessel.Situations.LANDED:
-                    case Vessel.Situations.SPLASHED:
-                    case Vessel.Situations.PRELAUNCH:
-                    case Vessel.Situations.FLYING:
-                        mode = CameraMode.GROUND;
-                        camera.pitch = Mathf.Clamp(camera.pitch + deltaPitch, MinPitch, MaxPitch);
-                        break;
+                    switch (vessel.situation)
+                    {
+                        case Vessel.Situations.LANDED:
+                        case Vessel.Situations.SPLASHED:
+                        case Vessel.Situations.PRELAUNCH:
+                        case Vessel.Situations.FLYING:
+                            mode = CameraMode.GROUND;
+                            camera.pitch = Mathf.Clamp(camera.pitch + deltaPitch, MinPitch, MaxPitch);
+                            break;
 
-                    case Vessel.Situations.SUB_ORBITAL:
-                    case Vessel.Situations.ORBITING:
-                    case Vessel.Situations.ESCAPING:
-                        mode = CameraMode.SPACE;
-                        camera.target_quaternion *= Quaternion.AngleAxis(deltaPitch * Mathf.Rad2Deg, Vector3.right);
-                        camera.target_quaternion *= Quaternion.AngleAxis(deltaYaw * Mathf.Rad2Deg, Vector3.up);
-                        break;
+                        case Vessel.Situations.SUB_ORBITAL:
+                        case Vessel.Situations.ORBITING:
+                        case Vessel.Situations.ESCAPING:
+                            mode = CameraMode.SPACE;
+                            camera.target_quaternion *= Quaternion.AngleAxis(deltaPitch * Mathf.Rad2Deg, Vector3.right);
+                            camera.target_quaternion *= Quaternion.AngleAxis(deltaYaw * Mathf.Rad2Deg, Vector3.up);
+                            break;
 
-                    case Vessel.Situations.DOCKED:
-                    default:
-                        break;
+                        case Vessel.Situations.DOCKED:
+                        default:
+                            break;
+                    }
                 }
             }
         }
@@ -115,18 +137,10 @@ namespace BetterEVA
 
         void FixedUpdate()
         {
-            if (eva == null)
-            {
-                eva = part.FindModuleImplementing<KerbalEVA>();
-
-                // add the callback before the others to have a chance to modify the packTgtRPos member
-                eva.st_idle_fl.OnFixedUpdate = this.TranslationControl + eva.st_idle_fl.OnFixedUpdate;
-                eva.st_idle_gr.OnFixedUpdate = this.TranslationControl + eva.st_idle_gr.OnFixedUpdate;
-            }
-
             switch (mode)
             {
                 case CameraMode.GROUND:
+                case CameraMode.LADDER:
                     break;
 
                 case CameraMode.SPACE:
@@ -159,6 +173,10 @@ namespace BetterEVA
 
                     case CameraMode.SPACE:
                         camera.UpdateCameraSpace();
+                        break;
+
+                    case CameraMode.LADDER:
+                        camera.UpdateCameraLadder();
                         break;
                 }
 
